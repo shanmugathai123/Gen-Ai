@@ -1,34 +1,21 @@
-import gradio as gr
-import pickle
+import streamlit as st
+import numpy as np
+from inference import load_model, predict_next_number
 
+st.title("🧠 LSTM Sequence Number Predictor")
 
-# Load the trained Logistic Regression model
-with open("model.pkl", "rb") as file:
-    model = pickle.load(file)
+# Input sequence
+input_values = st.text_input("Enter 3 numbers (comma-separated):", "45,46,47")
 
-# Define the prediction function
-def predict_admission(GRE, TOEFL, Rating, SOP, LOR, CGPA, Research):
-    input_features = [[GRE, TOEFL, Rating, SOP, LOR, CGPA, Research]]
-    prediction = model.predict(input_features)
-    return "✅ Admitted" if prediction[0] == 1 else "❌ Not Admitted"
+if st.button("Predict Next Number"):
+    try:
+        nums = [int(i.strip()) for i in input_values.split(",")]
+        if len(nums) != 3:
+            st.error("Enter exactly 3 numbers!")
+        else:
+            model = load_model()
+            result = predict_next_number(model, nums)
+            st.success(f"🔮 Predicted next number: {result:.2f}")
+    except Exception as e:
+        st.error(f"Error: {str(e)}")
 
-# Create the Gradio interface
-interface = gr.Interface(
-    fn=predict_admission,
-    inputs=[
-        gr.Number(label="GRE Score"),
-        gr.Number(label="TOEFL Score"),
-        gr.Number(label="University Rating"),
-        gr.Slider(1.0, 5.0, step=0.5, label="SOP Score"),
-        gr.Slider(1.0, 5.0, step=0.5, label="LOR Score"),
-        gr.Number(label="CGPA"),
-        gr.Radio([0, 1], label="Research (0 = No, 1 = Yes)")
-    ],
-    outputs=gr.Textbox(label="Admission Prediction"),
-    title="🎓 University Admission Predictor",
-    description="Predict whether a student will get admitted to a university based on academic metrics.",
-    theme="soft"
-)
-
-# Launch the app
-interface.launch()
